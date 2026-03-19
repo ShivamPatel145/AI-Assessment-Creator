@@ -1,7 +1,7 @@
 import { IAssignment } from '../assignment/assignment.model';
 
 export const buildPrompt = (assignment: IAssignment): string => {
-  const configs = assignment.questionsConfig.map(c => `${c.count} questions of type ${c.type}`).join(', ');
+  const configs = assignment.questionsConfig.map(c => `${c.count} questions of type ${c.type} (${c.marks} marks each)`).join(', ');
 
   return `You are an expert academic assessment generator. Create a structured exam based on the following configurations:
 
@@ -31,5 +31,6 @@ IMPORTANT RULES:
 1. Distribute difficulty ('easy', 'medium', 'hard') logically.
 2. Group questions logically across formatted sections.
 3. Validate total counts to strictly match ${configs}.
-4. Return ONLY valid JSON strings.`;
+4. Assign marks to each question according to the configuration provided.
+5. Return ONLY valid JSON strings.`;
 };

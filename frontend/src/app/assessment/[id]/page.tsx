@@ -71,12 +71,21 @@ function AssessmentContent() {
 
   // ── Fetch assignment on mount ─────────────────────────────────────
   useEffect(() => {
-    if (id) fetchAssignment(id);
+    if (id) {
+      // Only fetch if we don't already have the assignment with jobId
+      if (!currentAssignment || currentAssignment._id !== id) {
+        fetchAssignment(id);
+      }
+    }
   }, [id, fetchAssignment]);
 
   // ── Sync state from store ─────────────────────────────────────────
   useEffect(() => {
     if (currentAssignment) {
+      console.log('Current assignment:', currentAssignment);
+      console.log('Job ID:', currentAssignment.jobId);
+      console.log('Status:', currentAssignment.status);
+      
       setJobId(currentAssignment.jobId || null);
       if (currentAssignment.status === 'completed' && currentAssignment.generatedPaper) {
         setResult(currentAssignment.generatedPaper);
@@ -114,11 +123,16 @@ function AssessmentContent() {
   // ── WebSocket: Join job room + listen ─────────────────────────────
   useEffect(() => {
     const activeJobId = jobId;
-    if (!activeJobId) return;
+    if (!activeJobId) {
+      console.log('No jobId available, cannot join WebSocket room');
+      return;
+    }
 
+    console.log('Joining WebSocket room for job:', activeJobId);
     joinJob(activeJobId);
 
     const unsubProgress = onProgress((data) => {
+      console.log('Progress event:', data);
       if (data.jobId === activeJobId) {
         setLocalProgress(data.progress);
         updateProgress(data.progress, data.status);
@@ -126,6 +140,7 @@ function AssessmentContent() {
     });
 
     const unsubCompleted = onCompleted((data) => {
+      console.log('Completed event:', data);
       if (data.assignmentId === id) {
         setLocalProgress(100);
         setResult(data.result);
@@ -135,6 +150,7 @@ function AssessmentContent() {
     });
 
     const unsubError = onError((data) => {
+      console.log('Error event:', data);
       if (data.jobId === activeJobId) {
         setError(true);
         setErrorMsg(data.error || 'Generation failed');

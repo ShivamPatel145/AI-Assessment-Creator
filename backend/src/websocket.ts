@@ -49,18 +49,21 @@ export function getIO(): SocketIOServer {
 
 export function emitProgress(jobId: string, progress: number, status: string): void {
   if (io) {
+    logger.info({ jobId, progress, status }, '[WS] Emitting progress');
     io.to(`job:${jobId}`).emit('assignment:progress', { jobId, progress, status });
   }
 }
 
 export function emitCompleted(jobId: string, assignmentId: string, result: object): void {
   if (io) {
+    logger.info({ jobId, assignmentId }, '[WS] Emitting completed');
     io.to(`job:${jobId}`).emit('assignment:completed', { assignmentId, result });
   }
 }
 
 export function emitError(jobId: string, error: string): void {
   if (io) {
+    logger.info({ jobId, error }, '[WS] Emitting error');
     io.to(`job:${jobId}`).emit('assignment:error', { jobId, error });
   }
 }

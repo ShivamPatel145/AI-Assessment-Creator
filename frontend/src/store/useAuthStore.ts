@@ -3,6 +3,16 @@ import { persist } from 'zustand/middleware';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
+const apiFetch = async (path: string, options: RequestInit = {}) => {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...(options.headers as Record<string, string> || {}) },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+};
+
 interface User {
   _id: string;
   email: string;
@@ -33,26 +43,14 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
-
         try {
-          const res = await apiFetch("/auth/login", {
-            method: "POST",
+          const data = await apiFetch('/auth/login', {
+            method: 'POST',
             body: JSON.stringify({ email, password }),
           });
-
-          // 🔥 CRITICAL FIX
-          localStorage.setItem("token", res.token);
-
-          set({
-            user: res.user,
-            isLoading: false,
-          });
-
+          set({ user: data, token: data.token, isLoading: false });
         } catch (err: any) {
-          set({
-            error: err.message || "Login failed",
-            isLoading: false,
-          });
+          set({ error: err.message || 'Login failed', isLoading: false });
           throw err;
         }
       },

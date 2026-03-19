@@ -42,30 +42,47 @@ function HomeContent() {
   const totalM = qTypes.reduce((a, b) => a + (b.count * b.marks), 0);
 
   const handleSubmit = async () => {
-    try {
-      const fd = new FormData();
-      fd.append('title', 'Generated Assessment ' + new Date().toLocaleDateString());
-      fd.append('subject', 'General Subject');
-      fd.append('grade', 'Standard');
-      fd.append('dueDate', formData.dueDate || new Date().toISOString());
-      fd.append('numberOfQuestions', String(totalQ));
-      fd.append('totalMarks', String(totalM));
-      fd.append('additionalInstructions', formData.additionalInstructions);
-      
-      const qTypesMapped = qTypes.map(q => {
-        if (q.type.includes('Multiple')) return 'mcq';
-        if (q.type.includes('Short')) return 'short_answer';
-        if (q.type.includes('Diagram')) return 'long_answer';
-        return 'short_answer';
-      });
-      
-      fd.append('questionTypes', JSON.stringify(qTypesMapped));
-      if (formData.file) fd.append('file', formData.file);
+    if (!formData.dueDate) {
+      alert('Please select a due date');
+      return;
+    }
 
-      const id = await createAssignment(fd);
-      router.push(`/assessment/${id}`);
-    } catch (err) {
-      console.error(err);
+    try {
+      // Map question types to the format backend expects
+      const questionsConfig = qTypes.map(q => {
+        let type = 'short_answer';
+        if (q.type.includes('Multiple')) type = 'mcq';
+        else if (q.type.includes('Short')) type = 'short_answer';
+        else if (q.type.includes('Diagram')) type = 'long_answer';
+        else if (q.type.includes('Numerical')) type = 'numerical';
+        
+        return {
+          type,
+          count: q.count,
+          marks: q.marks
+        };
+      });
+
+      const payload = {
+        title: 'Generated Assessment ' + new Date().toLocaleDateString(),
+        dueDate: formData.dueDate,
+        questionsConfig,
+        instructions: formData.additionalInstructions || '',
+        fileUrl: ''
+      };
+
+      console.log('Submitting payload:', payload);
+      const id = await createAssignment(payload);
+      console.log('Assignment created with ID:', id);
+      
+      if (id) {
+        router.push(`/assessment/${id}`);
+      } else {
+        alert('Failed to create assignment. Please check console for errors.');
+      }
+    } catch (err: any) {
+      console.error('Assignment creation error:', err);
+      alert(`Error: ${err.message || 'Failed to create assignment'}\n\nMake sure the backend server is running on http://localhost:5000`);
     }
   };
 

@@ -40,6 +40,7 @@ export const getAssignmentByIdService = async (id: string) => {
       const assignment = await Assignment.findById(id).select('-fileUrl');
       if (assignment) {
         const obj = assignment.toObject();
+        logger.info({ assignmentId: id, hasJobId: !!obj.jobId }, '[SERVICE] Returning cached assignment');
         return { ...obj, result: JSON.parse(cached) };
       }
     }
@@ -47,6 +48,7 @@ export const getAssignmentByIdService = async (id: string) => {
 
   const assignment = await Assignment.findById(id).select('-fileUrl');
   if (!assignment) throw new AppError('Assignment not found', 404);
+  logger.info({ assignmentId: id, hasJobId: !!assignment.jobId, jobId: assignment.jobId }, '[SERVICE] Returning assignment from DB');
   return assignment;
 };
 

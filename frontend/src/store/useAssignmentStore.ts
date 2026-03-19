@@ -59,12 +59,12 @@ export const useAssignmentStore = create<AssignmentState>((set) => ({
     set({ formData: { ...initialFormData } });
   },
 
-  createAssignment: async (formData: FormData) => {
+  createAssignment: async (payload: any) => {
     set({ isSubmitting: true, error: null });
     try {
       const response = await apiFetch('/assignments', {
         method: 'POST',
-        body: formData,
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -73,7 +73,20 @@ export const useAssignmentStore = create<AssignmentState>((set) => ({
       }
 
       const data = await response.json();
-      set({ isSubmitting: false, progress: 0, generationStatus: 'pending' });
+      console.log('Create assignment response:', data);
+      
+      // Store the jobId immediately so the assessment page can use it
+      set({ 
+        isSubmitting: false, 
+        progress: 0, 
+        generationStatus: 'pending',
+        currentAssignment: {
+          _id: data.assignmentId,
+          jobId: data.jobId,
+          status: 'pending'
+        } as any
+      });
+      
       return data.assignmentId || data.assignment?._id;
     } catch (error: any) {
       set({ isSubmitting: false, error: error.message });
@@ -91,6 +104,10 @@ export const useAssignmentStore = create<AssignmentState>((set) => ({
       const data = await response.json();
       // Handle both old and new API response shapes
       const assignment = data.assignment || data;
+      
+      console.log('Fetched assignment:', assignment);
+      console.log('Assignment jobId:', assignment.jobId);
+      
       set({
         currentAssignment: assignment,
         isLoading: false,

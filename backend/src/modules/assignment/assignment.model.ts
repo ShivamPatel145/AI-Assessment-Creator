@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IQuestionConfig {
   type: string;
   count: number;
+  marks: number;
 }
 
 export interface IQuestion {
@@ -38,7 +39,8 @@ export interface IAssignment extends Document {
 
 const QuestionConfigSchema = new Schema<IQuestionConfig>({
   type: { type: String, required: true },
-  count: { type: Number, required: true }
+  count: { type: Number, required: true },
+  marks: { type: Number, required: true }
 }, { _id: false });
 
 const QuestionSchema = new Schema<IQuestion>({
