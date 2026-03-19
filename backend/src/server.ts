@@ -1,0 +1,113 @@
+import express from 'express';
+import cors from 'cors';
+import { createServer } from 'http';
+import mongoose from 'mongoose';
+import rateLimit from 'express-rate-limit';
+import { config } from './config';
+import { initWebSocket } from './websocket';
+import { startWorker } from './modules/queue/worker';
+import { getRedisConnection } from './services/redisService';
+import assignmentRoutes from './modules/assignment/assignment.routes';
+import authRoutes from './routes/authRoutes';
+import groupRoutes from './routes/groupRoutes';
+import libraryRoutes from './routes/libraryRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
+import { getJobStatus } from './modules/assignment/assignment.controller';
+import { protect } from './middleware/authMiddleware';
+import { requestIdMiddleware } from './middleware/requestId';
+import logger from './utils/logger';
+
+const app = express();
+const httpServer = createServer(app);
+
+// ── Global Middleware ─────────────────────────────────────────────────
+
+// Request ID (distributed tracing)
+app.use(requestIdMiddleware);
+
+// CORS
+app.use(cors({
+  origin: config.frontendUrl,
+  credentials: true,
+}));
+
+// Rate Limiting (abuse protection)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+app.use('/api/', limiter);
+
+// Body parsers
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request logging
+app.use((req, _res, next) => {
+  logger.info({ requestId: req.requestId, method: req.method, url: req.url }, '[REQUEST]');
+  next();
+});
+
+// ── Health Check ──────────────────────────────────────────────────────
+app.get('/api/health', (_req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    memory: process.memoryUsage(),
+  });
+});
+
+// ── API Routes ────────────────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/library', libraryRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+
+// Job Progress Fallback API (realtime + polling)
+app.get('/api/jobs/:jobId', protect, getJobStatus);
+
+// ── Error Handling ────────────────────────────────────────────────────
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  logger.error({ requestId: req.requestId, error: err.message }, '[UNHANDLED ERROR]');
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal server error',
+  });
+});
+
+// ── Server Bootstrap ──────────────────────────────────────────────────
+async function start() {
+  try {
+    await mongoose.connect(config.mongodbUri);
+    logger.info('MongoDB connected');
+
+    getRedisConnection();
+    initWebSocket(httpServer);
+    startWorker();
+
+    httpServer.listen(config.port, () => {
+      logger.info(`Server running on http://localhost:${config.port}`);
+      logger.info('WebSocket ready');
+      logger.info(`Frontend URL: ${config.frontendUrl}`);
+    });
+  } catch (error: any) {
+    logger.fatal({ error: error.message }, 'Failed to start server');
+    process.exit(1);
+  }
+}
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  logger.info('Shutting down...');
+  await mongoose.disconnect();
+  httpServer.close();
+  process.exit(0);
+});
+
+start();
+
+export default app;

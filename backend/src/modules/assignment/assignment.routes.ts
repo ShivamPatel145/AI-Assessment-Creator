@@ -1,0 +1,18 @@
+import { Router } from 'express';
+import { protect, authorizeRoles, Role } from '../../middleware/authMiddleware';
+import * as ctrl from './assignment.controller';
+
+const router = Router();
+
+// ── TEACHER ONLY ──────────────────────────────────────────────────────
+router.post('/', protect, authorizeRoles(Role.TEACHER), ctrl.createAssignment);
+router.delete('/:id', protect, authorizeRoles(Role.TEACHER), ctrl.deleteAssignment);
+router.post('/:id/regenerate', protect, authorizeRoles(Role.TEACHER), ctrl.regenerateAssignment);
+
+// ── TEACHER & STUDENT ─────────────────────────────────────────────────
+router.get('/', protect, authorizeRoles(Role.TEACHER, Role.STUDENT), ctrl.getAssignments);
+router.get('/:id', protect, authorizeRoles(Role.TEACHER, Role.STUDENT), ctrl.getAssignmentById);
+router.get('/:id/status', protect, authorizeRoles(Role.TEACHER, Role.STUDENT), ctrl.getAssignmentStatus);
+router.get('/:id/pdf', protect, authorizeRoles(Role.TEACHER, Role.STUDENT), ctrl.downloadAssignmentPdf);
+
+export default router;
