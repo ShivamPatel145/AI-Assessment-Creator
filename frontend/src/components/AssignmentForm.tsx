@@ -26,13 +26,15 @@ export default function AssignmentForm() {
     if (!formData.subject.trim()) newErrors.subject = 'Subject is required';
     if (!formData.grade.trim()) newErrors.grade = 'Grade/Level is required';
     if (!formData.dueDate) newErrors.dueDate = 'Due date is required';
+    if (!(formData as any).examDate) newErrors.examDate = 'Exam date & time is required';
     if (formData.questionTypes.length === 0) newErrors.questionTypes = 'Select at least one question type';
     if (formData.numberOfQuestions < 1 || formData.numberOfQuestions > 100)
       newErrors.numberOfQuestions = 'Must be between 1 and 100';
     if (formData.totalMarks < 1) newErrors.totalMarks = 'Must be a positive number';
     if (formData.totalMarks < formData.numberOfQuestions)
       newErrors.totalMarks = 'Total marks must be ≥ number of questions';
-    if (!(formData as any).duration || Number((formData as any).duration) <= 0) newErrors.duration = 'Enter duration in minutes';
+    if (!(formData as any).duration || Number((formData as any).duration) <= 0)
+      newErrors.duration = 'Enter duration in minutes';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -64,7 +66,8 @@ export default function AssignmentForm() {
       fd.append('title', formData.title);
       fd.append('subject', formData.subject);
       fd.append('grade', formData.grade);
-    fd.append('duration', String((formData as any).duration || ''));
+      fd.append('duration', String((formData as any).duration || ''));
+      if ((formData as any).examDate) fd.append('examDate', (formData as any).examDate);
       fd.append('topic', formData.topic);
       fd.append('dueDate', formData.dueDate);
       fd.append('questionTypes', JSON.stringify(formData.questionTypes));
@@ -87,6 +90,8 @@ export default function AssignmentForm() {
 
   return (
     <form onSubmit={handleSubmit} className="slide-up">
+
+      {/* ── 1. Assignment Details ── */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -95,6 +100,7 @@ export default function AssignmentForm() {
           </div>
         </div>
 
+        {/* Title */}
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Assignment Title *</label>
@@ -107,23 +113,69 @@ export default function AssignmentForm() {
             />
             {errors.title && <div className="form-error">⚠ {errors.title}</div>}
           </div>
+        </div>
 
+        {/* Topic / Due Date / Exam Date */}
+        <div className="form-row-3">
           <div className="form-group">
-            <label className="form-label">Subject *</label>
+            <label className="form-label">Topic / Chapter</label>
             <input
               type="text"
               className="form-input"
-              placeholder="e.g., Mathematics, Physics, English"
-              value={formData.subject}
-              onChange={(e) => setFormField('subject', e.target.value)}
+              placeholder="e.g., Algebra, Thermodynamics"
+              value={formData.topic}
+              onChange={(e) => setFormField('topic', e.target.value)}
             />
-            {errors.subject && <div className="form-error">⚠ {errors.subject}</div>}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Due Date *</label>
+            <input
+              type="date"
+              className="form-input"
+              value={formData.dueDate}
+              onChange={(e) => setFormField('dueDate', e.target.value)}
+            />
+            {errors.dueDate && <div className="form-error">⚠ {errors.dueDate}</div>}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Exam Date &amp; Time *</label>
+            <input
+              type="datetime-local"
+              className="form-input"
+              value={(formData as any).examDate || ''}
+              onChange={(e) => setFormField('examDate' as any, e.target.value)}
+            />
+            {errors.examDate && <div className="form-error">⚠ {errors.examDate}</div>}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2. Paper Metadata ── */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div className="card-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="card-icon">📚</div>
+            <div className="card-title">Paper Metadata</div>
           </div>
         </div>
 
         <div className="form-row-3">
           <div className="form-group">
-            <label className="form-label">Grade / Level *</label>
+            <label className="form-label">Subject *</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g., Mathematics, English"
+              value={formData.subject}
+              onChange={(e) => setFormField('subject', e.target.value)}
+            />
+            {errors.subject && <div className="form-error">⚠ {errors.subject}</div>}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Class / Grade *</label>
             <select
               className="form-select"
               value={formData.grade}
@@ -149,29 +201,21 @@ export default function AssignmentForm() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Topic / Chapter</label>
+            <label className="form-label">Time Allowed (minutes) *</label>
             <input
-              type="text"
+              type="number"
               className="form-input"
-              placeholder="e.g., Algebra, Thermodynamics"
-              value={formData.topic}
-              onChange={(e) => setFormField('topic', e.target.value)}
+              min={1}
+              placeholder="e.g., 60"
+              value={(formData as any).duration || ''}
+              onChange={(e) => setFormField('duration' as any, e.target.value)}
             />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Due Date *</label>
-            <input
-              type="date"
-              className="form-input"
-              value={formData.dueDate}
-              onChange={(e) => setFormField('dueDate', e.target.value)}
-            />
-            {errors.dueDate && <div className="form-error">⚠ {errors.dueDate}</div>}
+            {errors.duration && <div className="form-error">⚠ {errors.duration}</div>}
           </div>
         </div>
       </div>
 
+      {/* ── 3. Question Configuration ── */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -209,7 +253,9 @@ export default function AssignmentForm() {
               value={formData.numberOfQuestions}
               onChange={(e) => setFormField('numberOfQuestions', parseInt(e.target.value) || 0)}
             />
-            {errors.numberOfQuestions && <div className="form-error">⚠ {errors.numberOfQuestions}</div>}
+            {errors.numberOfQuestions && (
+              <div className="form-error">⚠ {errors.numberOfQuestions}</div>
+            )}
           </div>
 
           <div className="form-group">
@@ -245,22 +291,9 @@ export default function AssignmentForm() {
             </div>
           </div>
         </div>
-
-        <div className="form-row">
-          <div className="form-group" style={{ maxWidth: 260 }}>
-            <label className="form-label">Time Allowed (minutes) *</label>
-            <input
-              type="number"
-              className="form-input"
-              min={1}
-              value={(formData as any).duration || ''}
-              onChange={(e) => setFormField('duration' as any, e.target.value)}
-            />
-            {errors.duration && <div className="form-error">⚠ {errors.duration}</div>}
-          </div>
-        </div>
       </div>
 
+      {/* ── 4. Additional Resources ── */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -285,9 +318,7 @@ export default function AssignmentForm() {
             {formData.file ? (
               <>
                 <div className="file-upload-icon">📄</div>
-                <div className="file-name">
-                  ✓ {formData.file.name}
-                </div>
+                <div className="file-name">✓ {formData.file.name}</div>
                 <div className="file-upload-hint" style={{ marginTop: 4 }}>
                   Click to change file
                 </div>
@@ -295,12 +326,8 @@ export default function AssignmentForm() {
             ) : (
               <>
                 <div className="file-upload-icon">☁️</div>
-                <div className="file-upload-text">
-                  Click to upload or drag and drop
-                </div>
-                <div className="file-upload-hint">
-                  PDF or Text files up to 10MB
-                </div>
+                <div className="file-upload-text">Click to upload or drag and drop</div>
+                <div className="file-upload-hint">PDF or Text files up to 10MB</div>
               </>
             )}
           </div>
@@ -318,17 +345,22 @@ export default function AssignmentForm() {
         </div>
       </div>
 
+      {/* ── Global error ── */}
       {error && (
-        <div className="toast-error" style={{
-          padding: '14px 20px',
-          borderRadius: 'var(--radius-md)',
-          marginBottom: 16,
-          fontSize: 14,
-        }}>
+        <div
+          className="toast-error"
+          style={{
+            padding: '14px 20px',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: 16,
+            fontSize: 14,
+          }}
+        >
           ⚠ {error}
         </div>
       )}
 
+      {/* ── Actions ── */}
       <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
         <button
           type="button"
@@ -347,7 +379,10 @@ export default function AssignmentForm() {
         >
           {isSubmitting ? (
             <>
-              <span className="loading-spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
+              <span
+                className="loading-spinner"
+                style={{ width: 18, height: 18, borderWidth: 2 }}
+              />
               Generating...
             </>
           ) : (

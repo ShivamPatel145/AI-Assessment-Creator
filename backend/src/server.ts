@@ -2,6 +2,7 @@
 import 'dotenv/config';
 
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import { createServer } from 'http';
 import mongoose from 'mongoose';
@@ -58,6 +59,10 @@ app.use('/api/', limiter);
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve uploaded files (for local dev). Files uploaded via multer are stored
+// in the project `uploads/` folder and served at `/uploads/<filename>`.
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Request logging
 app.use((req, _res, next) => {

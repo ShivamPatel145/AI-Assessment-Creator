@@ -44,8 +44,9 @@ function AssessmentContent() {
   const params = useParams();
   const id = params.id as string;
   const paperRef = useRef<HTMLDivElement>(null);
+  const requestedIdRef = useRef<string | null>(null);
 
-  const { currentAssignment, fetchAssignment, generationStatus, progress, updateProgress, assignments, setCurrentAssignment } = useAssignmentStore();
+  const { currentAssignment, fetchAssignment, generationStatus, progress, updateProgress } = useAssignmentStore();
   const { user } = useAuthStore();
 
   const [jobId, setJobId] = useState<string | null>(null);
@@ -61,25 +62,15 @@ function AssessmentContent() {
   useEffect(() => {
     if (!id) return;
 
-    // Use stable primitives in dependency array to avoid re-running when store method
-    // identities change. Access store actions via getState() to call them.
-    const store = useAssignmentStore.getState();
-
-    // If we already have the assignment in the assignments list (e.g., user navigated from Assignments page),
-    // use it immediately. If the cached object doesn't include the generated `result`, fetch full assignment.
-    const existing = store.assignments?.find((a: any) => a._id === id);
-    if (existing) {
-      if (existing.result && existing.status === 'completed') {
-        store.setCurrentAssignment(existing as any);
-        return;
-      }
-      // cached but missing result: fetch the full assignment (includes result)
-      store.fetchAssignment(id);
+    if (currentAssignment?._id === id) {
+      requestedIdRef.current = id;
       return;
     }
 
-    if (!currentAssignment || currentAssignment._id !== id) store.fetchAssignment(id);
-  }, [id, currentAssignment?._id, assignments?.length]);
+    if (requestedIdRef.current === id) return;
+    requestedIdRef.current = id;
+    fetchAssignment(id);
+  }, [id, currentAssignment?._id, fetchAssignment]);
 
   useEffect(() => {
     if (currentAssignment) {
@@ -227,14 +218,6 @@ function AssessmentContent() {
               <AnimatePresence mode="wait">
                 {result && sections.length > 0 ? (
                   <motion.div key="paper" initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                    {/* Top dark banner with download action (matches Figma) */}
-                    <div className="paper-download-banner">
-                      <div className="banner-text">Your customized question paper is ready. You can download a printable PDF of this paper below.</div>
-                      <div className="banner-actions">
-                        <button className="btn-download-white" onClick={handleDownloadPDF} disabled={!result}>📥 Download as PDF</button>
-                      </div>
-                    </div>
-
                     <div className="question-paper">
                       <div className="paper-header">
                         <div className="paper-institution">{user?.schoolName || 'Your Institution'}</div>

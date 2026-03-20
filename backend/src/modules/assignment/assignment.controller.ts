@@ -11,6 +11,17 @@ import * as service from './assignment.service';
 export const createAssignment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = requireUser(req);
+    // If multer stored a file, expose a public URL for the uploaded file so
+    // downstream workers can fetch it. When the frontend sends FormData the
+    // fields will be available on req.body after multer runs.
+    if ((req as any).file) {
+      const file = (req as any).file;
+      const host = req.get('host');
+      const proto = req.protocol;
+      // Public URL served from /uploads
+      (req as any).body.fileUrl = `${proto}://${host}/uploads/${file.filename}`;
+    }
+
     const parsed = createAssignmentSchema.safeParse(req.body);
     if (!parsed.success) {
       const messages = parsed.error.issues.map((i: { message: string }) => i.message).join(', ');
@@ -40,11 +51,23 @@ export const getAssignments = async (req: AuthRequest, res: Response): Promise<v
 export const getAssignmentById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
-    const assignment = await service.getAssignmentByIdService(id);
-    if (assignment.status !== 'completed' && assignment.status !== 'failed') {
-      res.json({ status: assignment.status });
+    const assignment = await service.getAssignmentByIdService(id) as any;
+    const assignmentObj = typeof assignment?.toObject === 'function' ? assignment.toObject() : assignment;
+
+    if (assignmentObj.status !== 'completed' && assignmentObj.status !== 'failed') {
+      res.json({
+        _id: assignmentObj._id,
+        status: assignmentObj.status,
+        jobId: assignmentObj.jobId,
+        title: assignmentObj.title,
+        subject: assignmentObj.subject,
+        grade: assignmentObj.grade,
+        duration: assignmentObj.duration,
+        examDate: assignmentObj.examDate,
+        totalMarks: assignmentObj.totalMarks,
+      });
     } else {
-      res.json({ ...assignment, difficultyColorMap });
+      res.json({ ...assignmentObj, difficultyColorMap });
     }
   } catch (error: any) {
     res.status(error.statusCode || 500).json({ error: error.message });

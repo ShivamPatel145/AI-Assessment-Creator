@@ -22,6 +22,11 @@ export const generatePdf = (assignment: any, res: Response, user?: any) => {
   const grade = assignment.result?.grade || assignment.grade || '';
   const duration = assignment.result?.duration || assignment.duration || '';
   const totalMarks = assignment.result?.totalMarks || assignment.totalMarks || '';
+  const examDateRaw = assignment.result?.examDate || assignment.examDate || '';
+  let examDateFormatted = '';
+  try {
+    if (examDateRaw) examDateFormatted = new Date(examDateRaw).toLocaleString();
+  } catch {}
 
   // Sub header (centered)
   doc.font('Helvetica-Bold').fontSize(12).text(subject ? `${subject}` : '', { align: 'center' });
@@ -35,6 +40,11 @@ export const generatePdf = (assignment: any, res: Response, user?: any) => {
   doc.text(left, { align: 'left' });
   doc.text(right, { align: 'right' });
   doc.moveDown(0.8);
+
+  if (examDateFormatted) {
+    doc.font('Helvetica').fontSize(10).fillColor('#444').text(`Exam Date: ${examDateFormatted}`, { align: 'left' });
+    doc.moveDown(0.5);
+  }
 
   // Student info lines
   doc.moveDown(0.4);

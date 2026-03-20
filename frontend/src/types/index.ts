@@ -31,6 +31,7 @@ export interface Assignment {
   grade: string;
   topic: string;
   dueDate: string;
+  examDate?: string;
   questionTypes: string[];
   numberOfQuestions: number;
   totalMarks: number;
@@ -53,6 +54,7 @@ export interface AssignmentFormData {
   grade: string;
   topic: string;
   dueDate: string;
+  examDate?: string;
   questionTypes: string[];
   numberOfQuestions: number;
   totalMarks: number;

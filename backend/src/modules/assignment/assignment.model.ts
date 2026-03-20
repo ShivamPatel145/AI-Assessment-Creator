@@ -71,6 +71,7 @@ const AssignmentSchema = new Schema<IAssignment>({
   subject: { type: String, default: '' },
   grade: { type: String, default: '' },
   duration: { type: Schema.Types.Mixed, default: '' },
+  examDate: { type: Date },
   totalMarks: { type: Number, default: 0 },
   numberOfQuestions: { type: Number, default: 0 },
   dueDate: { type: Date, required: true },

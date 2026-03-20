@@ -6,8 +6,36 @@ import { AppError } from '../../utils/AppError';
 import logger from '../../utils/logger';
 
 export const createAssignmentService = async (data: CreateAssignmentInput, userId: string) => {
+  // Normalize questionsConfig: support both the new `questionsConfig` shape and
+  // legacy/simple form fields like `questionTypes`, `numberOfQuestions`, `totalMarks`.
+  let questionsConfig: any = (data as any).questionsConfig;
+  if (!questionsConfig) {
+    let qTypes = (data as any).questionTypes;
+    const numQ = Number((data as any).numberOfQuestions) || 0;
+    const totalMarks = Number((data as any).totalMarks) || 0;
+    if (typeof qTypes === 'string') {
+      try { qTypes = JSON.parse(qTypes); } catch { qTypes = [String(qTypes)]; }
+    }
+
+    if (Array.isArray(qTypes) && qTypes.length > 0 && numQ > 0) {
+      // Distribute questions roughly evenly across selected types
+      const base = Math.floor(numQ / qTypes.length);
+      const remainder = numQ % qTypes.length;
+      const marksPerQuestion = numQ ? Math.max(1, Math.floor(totalMarks / numQ)) : 1;
+      questionsConfig = qTypes.map((t: any, i: number) => ({
+        type: String(t),
+        count: i === 0 ? base + remainder : base,
+        marks: marksPerQuestion,
+      }));
+    } else {
+      // Fallback: single short_answer bucket
+      questionsConfig = [{ type: 'short_answer', count: numQ || 1, marks: Math.max(1, Math.floor((totalMarks || numQ) / (numQ || 1))) }];
+    }
+  }
+
   const assignment = new Assignment({
     ...data,
+    questionsConfig,
     createdBy: userId,
     status: 'pending',
   });

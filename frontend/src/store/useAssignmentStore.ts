@@ -107,7 +107,10 @@ export const useAssignmentStore = create<AssignmentState>((set) => ({
       }
       const data = await response.json();
       // Handle both old and new API response shapes
-      const assignment = data.assignment || data;
+      const rawAssignment = data.assignment || data;
+      const assignment = rawAssignment?._doc
+        ? { ...rawAssignment._doc, ...rawAssignment }
+        : rawAssignment;
       
       console.log('Fetched assignment:', assignment);
       console.log('Assignment jobId:', assignment.jobId);
