@@ -16,6 +16,7 @@ import authRoutes from './routes/authRoutes';
 import groupRoutes from './routes/groupRoutes';
 import libraryRoutes from './routes/libraryRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
+import toolkitRoutes from './routes/toolkitRoutes';
 import { getJobStatus } from './modules/assignment/assignment.controller';
 import { protect } from './middleware/authMiddleware';
 import { requestIdMiddleware } from './middleware/requestId';
@@ -86,6 +87,7 @@ app.use('/api/assignments', assignmentRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/toolkit', toolkitRoutes);
 
 // Job Progress Fallback API (realtime + polling)
 app.get('/api/jobs/:jobId', protect, getJobStatus);

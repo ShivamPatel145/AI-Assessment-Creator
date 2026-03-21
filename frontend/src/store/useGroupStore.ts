@@ -7,6 +7,7 @@ interface Group {
   students: number;
   term: string;
   color: string;
+  roster?: Array<{ name: string; rollNo?: string }>;
   createdAt: string;
 }
 
@@ -15,9 +16,16 @@ interface GroupState {
   isLoading: boolean;
   error: string | null;
   fetchGroups: () => Promise<void>;
-  createGroup: (data: { title: string; students: number; term: string; color: string }) => Promise<void>;
+  createGroup: (data: { title: string; students: number; term: string; color: string; roster?: Array<{ name: string; rollNo?: string }> }) => Promise<void>;
+  updateGroup: (id: string, data: { title?: string; students?: number; term?: string; color?: string; roster?: Array<{ name: string; rollNo?: string }> }) => Promise<void>;
   deleteGroup: (id: string) => Promise<void>;
+  clearError: () => void;
 }
+
+const toErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+};
 
 export const useGroupStore = create<GroupState>((set, get) => ({
   groups: [],
@@ -31,8 +39,8 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       if (!res.ok) throw new Error('Failed to fetch groups');
       const data = await res.json();
       set({ groups: data, isLoading: false });
-    } catch (err: any) {
-      set({ groups: [], isLoading: false, error: err.message });
+    } catch (error: unknown) {
+      set({ groups: [], isLoading: false, error: toErrorMessage(error, 'Failed to fetch groups') });
     }
   },
 
@@ -44,8 +52,21 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       });
       if (!res.ok) throw new Error('Failed to create group');
       await get().fetchGroups();
-    } catch (err: any) {
-      set({ error: err.message });
+    } catch (error: unknown) {
+      set({ error: toErrorMessage(error, 'Failed to create group') });
+    }
+  },
+
+  updateGroup: async (id, data) => {
+    try {
+      const res = await apiFetch(`/groups/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Failed to update group');
+      await get().fetchGroups();
+    } catch (error: unknown) {
+      set({ error: toErrorMessage(error, 'Failed to update group') });
     }
   },
 
@@ -54,8 +75,10 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       const res = await apiFetch(`/groups/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete group');
       await get().fetchGroups();
-    } catch (err: any) {
-      set({ error: err.message });
+    } catch (error: unknown) {
+      set({ error: toErrorMessage(error, 'Failed to delete group') });
     }
   },
+
+  clearError: () => set({ error: null }),
 }));

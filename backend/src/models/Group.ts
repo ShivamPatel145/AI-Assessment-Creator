@@ -6,6 +6,7 @@ export interface IGroup extends Document {
   students: number;
   term: string;
   color: string;
+  roster: Array<{ name: string; rollNo?: string }>;
 }
 
 const GroupSchema = new Schema<IGroup>(
@@ -15,6 +16,7 @@ const GroupSchema = new Schema<IGroup>(
     students: { type: Number, default: 0 },
     term: { type: String, required: true },
     color: { type: String, default: '#e0e7ff' },
+    roster: [{ name: { type: String, required: true }, rollNo: { type: String } }],
   },
   { timestamps: true }
 );

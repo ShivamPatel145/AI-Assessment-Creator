@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 
 function ProfileContent() {
   const { user } = useAuthStore();
+  const avatarSrc = user?.avatarUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${user?.email || 'Teacher'}`;
 
   return (
     <div className="app-layout">
@@ -20,7 +21,7 @@ function ProfileContent() {
             <div className="profile-hero">
               <div className="profile-cover" />
               <img
-                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${user?.email || 'Teacher'}`}
+                src={avatarSrc}
                 className="profile-avatar"
                 alt="Profile avatar"
               />

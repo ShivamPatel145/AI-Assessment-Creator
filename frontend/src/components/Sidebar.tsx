@@ -12,6 +12,7 @@ export default function Sidebar() {
   const user = useAuthStore((s) => s.user);
   const isOpen = useUIStore((s) => s.mobileSidebarOpen);
   const close = useUIStore((s) => s.close);
+  const avatarSrc = user?.avatarUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${user?.email || 'Teacher'}`;
 
   return (
     <>
@@ -50,7 +51,7 @@ export default function Sidebar() {
         </Link>
         <Link href="/profile" className={`sidebar-user ${pathname === '/profile' ? 'active' : ''}`} style={{ textDecoration: 'none' }} onClick={close}>
           <div className="user-avatar">
-            <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Teacher" alt="Avatar" width="100%" height="100%" />
+            <img src={avatarSrc} alt="Avatar" width="100%" height="100%" style={{ objectFit: 'cover' }} />
           </div>
           <div className="user-info">
             <div className="user-name">{user?.schoolName ?? 'Your School'}</div>

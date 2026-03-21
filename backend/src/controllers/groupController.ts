@@ -20,9 +20,9 @@ export const getGroups = async (req: AuthRequest, res: Response): Promise<void> 
 export const createGroup = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = requireUser(req);
-    const { title, students, term, color } = req.body;
+    const { title, students, term, color, roster } = req.body;
     const group = await groupService.createGroupService(user._id.toString(), {
-      title, students, term, color,
+      title, students, term, color, roster,
     });
     res.status(201).json(group);
   } catch (error: any) {
@@ -54,6 +54,26 @@ export const deleteGroup = async (req: AuthRequest, res: Response): Promise<void
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       error: error.message || 'Failed to delete group',
+    });
+  }
+};
+
+// PUT /groups/:id
+export const updateGroup = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+    const { title, students, term, color, roster } = req.body;
+    const group = await groupService.updateGroupService(req.params.id as string, user._id.toString(), {
+      title,
+      students,
+      term,
+      color,
+      roster,
+    });
+    res.json(group);
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      error: error.message || 'Failed to update group',
     });
   }
 };

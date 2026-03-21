@@ -88,6 +88,15 @@ function AssessmentContent() {
   const [retryInfo, setRetryInfo] = useState<{ attempt?: number; maxAttempts?: number; willRetry?: boolean }>({});
   const [result, setResult] = useState<any>(null);
   const [fakeTickingItems, setFakeTickingItems] = useState<string[]>([]);
+  const [processFeed, setProcessFeed] = useState<Array<{ id: string; text: string }>>([]);
+
+  const pushProcess = useCallback((text: string) => {
+    setProcessFeed((prev) => {
+      const stamped = `${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${text}`;
+      const next = [{ id: `${Date.now()}-${Math.random()}`, text: stamped }, ...prev];
+      return next.slice(0, 8);
+    });
+  }, []);
 
   const generationActive =
     generationStatus === 'processing' ||
@@ -118,15 +127,20 @@ function AssessmentContent() {
       if (currentAssignment.status === 'completed' && currentAssignment.generatedPaper) {
         setResult(currentAssignment.generatedPaper);
         setLocalProgress(100);
+        pushProcess('Question paper generated successfully.');
       } else if (currentAssignment.status === 'completed' && (currentAssignment as any).result) {
         setResult((currentAssignment as any).result);
         setLocalProgress(100);
+        pushProcess('Paper result received from API.');
       } else if (currentAssignment.status === 'failed') {
         setError(true);
         setLocalProgress(0);
+        pushProcess('Generation failed for this assignment.');
+      } else if (currentAssignment.status === 'pending' || currentAssignment.status === 'processing') {
+        pushProcess('Generation started and waiting for live updates.');
       }
     }
-  }, [currentAssignment]);
+  }, [currentAssignment, pushProcess]);
 
   useEffect(() => {
     const isGenerating = generationStatus === 'processing' || generationStatus === 'pending';
@@ -154,6 +168,7 @@ function AssessmentContent() {
       if (data.jobId === activeJobId) {
         setLocalProgress(data.progress);
         updateProgress(data.progress, data.status);
+        pushProcess(`Live progress: ${data.progress}% (${data.status || 'processing'})`);
       }
     });
 
@@ -163,6 +178,7 @@ function AssessmentContent() {
         setResult(data.result);
         setError(false);
         updateProgress(100, 'completed');
+        pushProcess('Realtime completion event received.');
       }
     });
 
@@ -170,6 +186,7 @@ function AssessmentContent() {
       if (data.jobId === activeJobId) {
         setError(true);
         setErrorMsg(data.error || 'Generation failed');
+        pushProcess(`Realtime error: ${data.error || 'Generation failed'}`);
         const isQuotaError = data.error?.includes('quota') || data.error?.includes('Quota');
         const isTemporaryError = data.error?.toLowerCase().includes('temporary') || data.error?.toLowerCase().includes('attempt');
         if (isQuotaError) { setErrorType('quota'); setIsRetryable(false); }
@@ -180,7 +197,41 @@ function AssessmentContent() {
     });
 
     return () => { leaveJob(activeJobId); unsubProgress(); unsubCompleted(); unsubError(); };
-  }, [jobId, id, updateProgress]);
+  }, [jobId, id, updateProgress, pushProcess]);
+
+  useEffect(() => {
+    if (!jobId || !generationActive) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiFetch(`/jobs/${jobId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (typeof data?.progress === 'number') {
+          setLocalProgress(data.progress);
+          updateProgress(data.progress, data.status || 'processing');
+        }
+        if (data?.status) {
+          pushProcess(`Polling status: ${data.status} ${typeof data?.progress === 'number' ? `(${data.progress}%)` : ''}`);
+        }
+        if (data?.status === 'completed') {
+          setLocalProgress(100);
+          updateProgress(100, 'completed');
+          await fetchAssignment(id);
+          clearInterval(interval);
+        }
+        if (data?.status === 'failed' || data?.error) {
+          setError(true);
+          setErrorMsg(data?.error || 'Generation failed');
+          pushProcess(`Polling failure: ${data?.error || 'Generation failed'}`);
+        }
+      } catch {
+        // Ignore intermittent polling failures while sockets are active.
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [jobId, generationActive, id, fetchAssignment, updateProgress, pushProcess]);
 
   const handleRegenerate = useCallback(async () => {
     try {
@@ -258,6 +309,17 @@ function AssessmentContent() {
                     </div>
 
                     <ProgressBar progress={displayProgress} />
+
+                    <div style={{ marginTop: 16, borderTop: '1px solid var(--border-light)', paddingTop: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: 'var(--text-secondary)' }}>Live Process</div>
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        {(processFeed.length ? processFeed : [{ id: 'boot', text: 'Booting AI workflow...' }]).map((item) => (
+                          <div key={item.id} style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-main)', border: '1px solid var(--border-light)', padding: '7px 10px', borderRadius: 8 }}>
+                            {item.text}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </motion.div>
                 </motion.div>
               )}

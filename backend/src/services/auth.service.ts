@@ -24,8 +24,15 @@ export interface AuthResponse {
   email: string;
   schoolName: string;
   location: string;
+  avatarUrl?: string;
   role: string;
   token: string;
+}
+
+export interface UpdateProfileData {
+  schoolName?: string;
+  location?: string;
+  avatarUrl?: string;
 }
 
 // ── Private Helpers ───────────────────────────────────────────────────
@@ -44,6 +51,7 @@ const toAuthResponse = (user: IUser): AuthResponse => ({
   email: user.email,
   schoolName: user.schoolName,
   location: user.location,
+  avatarUrl: user.avatarUrl,
   role: user.role,
   token: generateToken(user._id.toString(), user.role),
 });
@@ -110,4 +118,26 @@ export const getUserByIdService = async (userId: string): Promise<IUser> => {
   const user = await User.findById(userId).select('-passwordHash');
   if (!user) throw new AppError('User not found', 404);
   return user;
+};
+
+export const updateUserProfileService = async (userId: string, data: UpdateProfileData): Promise<IUser> => {
+  const user = await User.findById(userId);
+  if (!user) throw new AppError('User not found', 404);
+
+  if (typeof data.schoolName === 'string' && data.schoolName.trim()) {
+    user.schoolName = data.schoolName.trim();
+  }
+
+  if (typeof data.location === 'string' && data.location.trim()) {
+    user.location = data.location.trim();
+  }
+
+  if (typeof data.avatarUrl === 'string' && data.avatarUrl.trim()) {
+    user.avatarUrl = data.avatarUrl;
+  }
+
+  await user.save();
+  const sanitized = await User.findById(userId).select('-passwordHash');
+  if (!sanitized) throw new AppError('User not found', 404);
+  return sanitized;
 };

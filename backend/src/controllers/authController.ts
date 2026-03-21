@@ -43,3 +43,32 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     });
   }
 };
+
+// PUT /auth/me
+export const updateMe = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = requireUser(req);
+    const { schoolName, location, avatarUrl: avatarUrlFromBody } = req.body;
+
+    let avatarUrl: string | undefined;
+    if (req.file) {
+      const host = req.get('host');
+      const proto = req.protocol;
+      avatarUrl = `${proto}://${host}/uploads/${req.file.filename}`;
+    } else if (typeof avatarUrlFromBody === 'string' && avatarUrlFromBody.trim()) {
+      avatarUrl = avatarUrlFromBody.trim();
+    }
+
+    const updatedUser = await authService.updateUserProfileService(user._id.toString(), {
+      schoolName,
+      location,
+      avatarUrl,
+    });
+
+    res.json(updatedUser);
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      error: error.message || 'Server error updating profile',
+    });
+  }
+};

@@ -13,11 +13,17 @@ const apiFetch = async (path: string, options: RequestInit = {}) => {
   return data;
 };
 
+const toErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+};
+
 interface User {
   _id: string;
   email: string;
   schoolName: string;
   location: string;
+  avatarUrl?: string;
   role: 'TEACHER' | 'STUDENT';
 }
 
@@ -29,6 +35,7 @@ interface AuthState {
 
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, schoolName: string, location: string, role?: string) => Promise<void>;
+  updateProfile: (payload: { schoolName: string; location: string; avatar?: File | null; avatarUrl?: string }) => Promise<void>;
   logout: () => void;
   clearError: () => void;
 }
@@ -49,9 +56,10 @@ export const useAuthStore = create<AuthState>()(
             body: JSON.stringify({ email, password }),
           });
           set({ user: data, token: data.token, isLoading: false });
-        } catch (err: any) {
-          set({ error: err.message || 'Login failed', isLoading: false });
-          throw err;
+        } catch (error: unknown) {
+          const message = toErrorMessage(error, 'Login failed');
+          set({ error: message, isLoading: false });
+          throw error;
         }
       },
 
@@ -66,8 +74,45 @@ export const useAuthStore = create<AuthState>()(
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Registration failed');
           set({ user: data, token: data.token, isLoading: false });
-        } catch (error: any) {
-          set({ isLoading: false, error: error.message });
+        } catch (error: unknown) {
+          set({ isLoading: false, error: toErrorMessage(error, 'Registration failed') });
+          throw error;
+        }
+      },
+
+      updateProfile: async ({ schoolName, location, avatar, avatarUrl }) => {
+        const token = useAuthStore.getState().token;
+        if (!token) {
+          throw new Error('You are not logged in');
+        }
+
+        set({ isLoading: true, error: null });
+        try {
+          const formData = new FormData();
+          formData.append('schoolName', schoolName);
+          formData.append('location', location);
+          if (avatar) {
+            formData.append('avatar', avatar);
+          } else if (typeof avatarUrl === 'string' && avatarUrl.trim()) {
+            formData.append('avatarUrl', avatarUrl.trim());
+          }
+
+          const res = await fetch(`${API_URL}/auth/me`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || 'Failed to update profile');
+          }
+
+          set((state) => ({ user: data, isLoading: false, error: null, token: state.token }));
+        } catch (error: unknown) {
+          set({ isLoading: false, error: toErrorMessage(error, 'Failed to update profile') });
           throw error;
         }
       },

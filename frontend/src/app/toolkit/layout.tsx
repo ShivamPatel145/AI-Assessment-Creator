@@ -8,7 +8,7 @@ export default function ToolkitLayout({ children }: { children: React.ReactNode 
     <div className="app-layout">
       <Sidebar />
       <div className="main-content">
-        <TopBar title="Assignment" />
+        <TopBar title="AI Teacher's Toolkit" />
         <div className="page-container">
           {children}
         </div>

@@ -22,6 +22,7 @@ export default function TopBar({ title }: { title: string }) {
   const progressMilestoneRef = useRef<Record<string, number>>({});
 
   const unreadCount = useMemo(() => notificationItems.filter((item) => !item.read).length, [notificationItems]);
+  const avatarSrc = user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?._id ?? 'user'}`;
 
   useEffect(() => {
     const activeJobId = currentAssignment?.jobId;
@@ -138,7 +139,7 @@ export default function TopBar({ title }: { title: string }) {
         </div>
         <Link href="/profile" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="user-dropdown">
-            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?._id ?? 'user'}`} alt="User" style={{ width: 28, height: 28, borderRadius: 14, background: '#f3f4f6' }} />
+            <img src={avatarSrc} alt="User" style={{ width: 28, height: 28, borderRadius: 14, background: '#f3f4f6', objectFit: 'cover' }} />
             <span className="user-name-desktop">{user?.email ? user.email.split('@')[0] : 'User'}</span> <span style={{ opacity: 0.5 }}>⌄</span>
           </div>
         </Link>

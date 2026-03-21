@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import BrandLogo from '@/components/BrandLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -57,14 +58,9 @@ export default function LoginPage() {
           transition={{ delay: 0.2, type: 'spring' }}
           style={{ textAlign: 'center', marginBottom: 32 }}
         >
-          <div style={{
-            width: 56, height: 56, borderRadius: 16,
-            background: 'linear-gradient(135deg, #f97316, #f59e0b)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 12,
-            boxShadow: '0 8px 24px rgba(249, 115, 22, 0.3)',
-          }}>V</div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827', marginBottom: 4 }}>VedaAI</h1>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <BrandLogo />
+          </div>
           <p style={{ fontSize: 14, color: '#6b7280' }}>
             {isRegister ? 'Create your account' : 'Sign in to your account'}
           </p>

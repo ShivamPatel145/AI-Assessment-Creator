@@ -37,6 +37,12 @@ export type IQuestionPaper = IResult;
 
 export interface IAssignment extends Document {
   title: string;
+  subject?: string;
+  grade?: string;
+  duration?: string | number;
+  examDate?: Date;
+  totalMarks?: number;
+  numberOfQuestions?: number;
   dueDate: Date;
   questionsConfig: IQuestionConfig[];
   instructions: string;

@@ -8,6 +8,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/veda-logo.svg" />
+      </head>
       <body>
         <ThemeProvider attribute="class" defaultTheme="light">
           {children}
